@@ -1,5 +1,5 @@
 {
     "symptoms": ["itching", "skin_rash", "nodal_skin_eruptions"],
-    "conditions": ["CKD"],
-    "medications": ["Metformin"]
+    "conditions": [],
+    "medications": ["Ibuprofen"]
 }

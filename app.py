@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from rules import check_safety
+from neo4j_client import query_interactions
 import joblib
 import pandas as pd
 
@@ -32,9 +33,15 @@ def predict():
     # Run safety checks
     safety_warnings = check_safety(conditions, medications)
 
+    # Query Neo4j for each medication's known relationships
+    graph_relationships = []
+    for med in medications:
+        graph_relationships.extend(query_interactions(med))
+
     return jsonify({
         "predicted_condition": predicted_disease,
         "safety_warnings": safety_warnings,
+        "graph_relationships": graph_relationships,
         "received": {
             "symptoms": symptoms,
             "conditions": conditions,
