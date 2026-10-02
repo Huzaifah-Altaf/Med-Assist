@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from rules import check_safety
 from neo4j_client import query_interactions
 from pinecone_client import search_guidelines
+from gemini_client import generate_explanation
 import joblib
 import pandas as pd
 
@@ -44,12 +45,23 @@ def predict():
     guideline_results = search_guidelines(query_text)
     relevant_guidelines = [hit.fields['text'] for hit in guideline_results.result.hits]
 
+    # Generate a clear explanation using Gemini
+    explanation = generate_explanation(
+        predicted_condition=predicted_disease,
+        safety_warnings=safety_warnings,
+        graph_relationships=graph_relationships,
+        relevant_guidelines=relevant_guidelines,
+        symptoms=symptoms,
+        conditions=conditions,
+        medications=medications
+    )
 
     return jsonify({
         "predicted_condition": predicted_disease,
         "safety_warnings": safety_warnings,
         "graph_relationships": graph_relationships,
         "relevant_guidelines": relevant_guidelines,
+        "explanation": explanation,
         "received": {
             "symptoms": symptoms,
             "conditions": conditions,
