@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from rules import check_safety
 from neo4j_client import query_interactions
+from pinecone_client import search_guidelines
 import joblib
 import pandas as pd
 
@@ -38,10 +39,17 @@ def predict():
     for med in medications:
         graph_relationships.extend(query_interactions(med))
 
+     # Search Pinecone for relevant clinical guidelines
+    query_text = f"Patient with {', '.join(conditions)} taking {', '.join(medications)}, symptoms: {', '.join(symptoms)}"
+    guideline_results = search_guidelines(query_text)
+    relevant_guidelines = [hit.fields['text'] for hit in guideline_results.result.hits]
+
+
     return jsonify({
         "predicted_condition": predicted_disease,
         "safety_warnings": safety_warnings,
         "graph_relationships": graph_relationships,
+        "relevant_guidelines": relevant_guidelines,
         "received": {
             "symptoms": symptoms,
             "conditions": conditions,
