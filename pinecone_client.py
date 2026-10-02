@@ -15,5 +15,17 @@ def test_connection():
     print("Connected to Pinecone successfully!!!")
     print(stats)
 
+def search_guidelines(query_text, top_k=3):
+    results = index.search(
+        namespace="default",
+        query={
+            "inputs": {"text": query_text},
+            "top_k": top_k
+        }
+    )
+    return results
+
 if __name__ == '__main__':
     test_connection()
+    results = search_guidelines("patient with kidney problems taking metformin")
+    print(results)
