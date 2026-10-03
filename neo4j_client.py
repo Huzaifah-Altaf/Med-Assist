@@ -36,9 +36,9 @@ def query_interactions(drug_name):
     with driver.session() as session:
         result = session.run("""
             MATCH (d:Drug {name: $drug_name})-[r]->(target)
-            RETURN type(r) AS relationship, target.name AS target_name
+            RETURN type(r) AS relationship, target.name AS target_name, r.description AS description
         """, drug_name=drug_name)
-        return [{"relationship": record["relationship"], "target": record["target_name"]} for record in result]
+        return [{"relationship": record["relationship"], "target": record["target_name"], "description": record["description"]} for record in result]
 
 
 

@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from rules import check_safety
 from neo4j_client import query_interactions
 from pinecone_client import search_guidelines
@@ -7,12 +8,18 @@ import joblib
 import pandas as pd
 
 app = Flask(__name__)
+CORS(app)
 
 # Load the trained model once, when the server starts
 model = joblib.load('model/medassist_model.pkl')
 
 # Get the exact list of symptom columns the model expects (same order as training)
 symptom_columns = pd.read_csv('data/Training.csv').drop(columns=['Unnamed: 133', 'prognosis']).columns.tolist()
+
+
+@app.route('/symptoms')
+def get_symptoms():
+    return jsonify(symptom_columns)
 
 @app.route('/')
 def home():

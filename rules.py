@@ -1,6 +1,10 @@
 def check_safety(conditions, medications):
     warnings = []
 
+    # Normalize to uppercase for comparison
+    conditions = [c.upper() for c in conditions]
+    medications = [m.capitalize() for m in medications]
+
     # Rule 1: Metformin is risky for patients with CKD (Chronic Kidney Disease)
     if "CKD" in conditions and "Metformin" in medications:
         warnings.append("Metformin is not recommended for patients with CKD due to risk of lactic acidosis.")
