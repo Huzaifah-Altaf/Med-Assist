@@ -1,0 +1,10 @@
+Flask
+Flask-Cors
+gunicorn
+python-dotenv
+scikit-learn
+pandas
+numpy
+neo4j
+google-genai
+pinecone
