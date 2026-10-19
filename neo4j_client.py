@@ -41,6 +41,38 @@ def query_interactions(drug_name):
         return [{"relationship": record["relationship"], "target": record["target_name"], "description": record["description"]} for record in result]
 
 
+def query_patient_interactions(medications, conditions):
+    meds = [m.lower() for m in medications]
+    conds = [c.lower() for c in conditions]
+    results = []
+    with driver.session() as session:
+        pairs = session.run("""
+            MATCH (a:Drug)-[r:INTERACTS_WITH]-(b:Drug)
+            WHERE toLower(a.name) IN $meds AND toLower(b.name) IN $meds
+              AND a.name < b.name
+            RETURN a.name AS drug1, b.name AS drug2, r.description AS description
+        """, meds=meds)
+        for rec in pairs:
+            results.append({
+                "type": "drug-drug",
+                "between": f"{rec['drug1']} + {rec['drug2']}",
+                "description": rec["description"] or "Interaction recorded"
+            })
+
+        links = session.run("""
+            MATCH (d:Drug)-[r]->(c:Condition)
+            WHERE toLower(d.name) IN $meds AND toLower(c.name) IN $conds
+            RETURN d.name AS drug, type(r) AS relationship, c.name AS condition
+        """, meds=meds, conds=conds)
+        for rec in links:
+            results.append({
+                "type": "drug-condition",
+                "between": f"{rec['drug']} and {rec['condition']}",
+                "description": rec["relationship"]
+            })
+    return results
+
+
 
 if __name__ == '__main__':
     test_connection()

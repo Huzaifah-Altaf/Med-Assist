@@ -1,10 +1,41 @@
 import os
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types
 
 load_dotenv()
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
+GEMINI_TIMEOUT_MS = 20_000
+
+# The client is created on first use so a missing key does not prevent the
+# Flask application from starting (app.py already has a graceful fallback).
+_client = None
+
+
+def _get_client():
+    global _client
+
+    if _client is None:
+        api_key = os.getenv("GEMINI_API_KEY", "").strip()
+        if not api_key:
+            raise RuntimeError("GEMINI_API_KEY is not configured")
+
+        _client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(
+                timeout=GEMINI_TIMEOUT_MS,
+                retry_options=types.HttpRetryOptions(
+                    attempts=3,
+                    initial_delay=1,
+                    max_delay=8,
+                    http_status_codes=[408, 429, 500, 502, 503, 504],
+                ),
+            ),
+        )
+
+    return _client
 
 def generate_explanation(predicted_condition, safety_warnings, graph_relationships, relevant_guidelines, symptoms, conditions, medications):
     prompt = f"""You are assisting a doctor by explaining a clinical decision support system's output in clear, professional language.
@@ -22,11 +53,14 @@ System findings:
 
 Write a brief, clear explanation (3-5 sentences) for the doctor, summarizing the predicted condition, any safety concerns, and a relevant recommendation. Be direct and professional, as if speaking to a colleague."""
 
-    response = client.models.generate_content(
-        model="gemini-3.8-flash",
+    response = _get_client().models.generate_content(
+        model=GEMINI_MODEL,
         contents=prompt
     )
-    return response.text
+    text = getattr(response, "text", None)
+    if not isinstance(text, str) or not text.strip():
+        raise RuntimeError("Gemini returned an empty explanation")
+    return text.strip()
 
 if __name__ == '__main__':
     result = generate_explanation(
